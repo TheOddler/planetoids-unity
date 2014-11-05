@@ -96,9 +96,9 @@ public static class SISettings
 	
 	static void EditorSettings()
 	{
-		global::ScriptInspector.FGTextEditor te; 
+		//global::ScriptInspector.FGTextEditor te; 
 		//ScriptInspector.FGTextEditor te1;
-		var global = 6;
+		//var global = 6;
 		//global::
 		//	global::ScriptInspector.FGTextEditor te;
 	}
