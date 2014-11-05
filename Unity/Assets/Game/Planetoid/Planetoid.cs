@@ -41,15 +41,17 @@ public class Planetoid : MonoBehaviour {
 
 	IEnumerator FadeAway(PlanetoidsManager manager) {
 		float fadeTime = manager.FadeTime;
+		float fullMass = _rigidbody.mass;
 
 		do {
+			float fadePercentage = fadeTime / manager.FadeTime;
+			
+			_color.a = (byte)(fadePercentage * 255.0f);
+			Helpers.UpdateMeshColor(_meshFilter.mesh, _color);
+			
+			_rigidbody.mass = fadePercentage * fullMass;
+			
 			fadeTime -= Time.deltaTime;
-			_color.a = (byte)(fadeTime / manager.FadeTime * 255.0f);
-			Color32[] colors = _meshFilter.mesh.colors32;
-			for (int i = 0; i < _meshFilter.mesh.vertices.Length; ++i) {
-				colors[i] = _color;
-			}
-			_meshFilter.mesh.colors32 = colors;
 			yield return null;
 		} while (fadeTime > 0);
 
@@ -232,15 +234,13 @@ public class Planetoid : MonoBehaviour {
 	static public float GetArea(Vector2[] points) {
 		float area = 0;
 		for (var i = 0; i < points.Length; ++i) {
-			float p1x = points[i].x;
-			float p1y = points[i].y;
-			float p2x = points[(i+1)%points.Length].x;
-			float p2y = points[(i+1)%points.Length].y;
+			Vector2 p1 = points[i];
+			Vector2 p2 = points[(i+1)%points.Length];
 			
-			area += (p1x*p2y - p2x*p1y);
+			area += (p1.x*p2.y - p2.x*p1.y);
 		}
 		area /= 2.0f;
-		area = Mathf.Abs(area); //just in case
+		area = Mathf.Abs(area);
 		return area;
 	}
 
@@ -248,7 +248,7 @@ public class Planetoid : MonoBehaviour {
 		return GetArea(_collider.points);
 	}
 	
-	#if UNITY_EDITOR
+	#if UNITY_EDITOR && FALSE
 	void OnGUI () {
 		var screenPos = Camera.main.WorldToScreenPoint(_rigidbody.worldCenterOfMass);
 		screenPos.y = Screen.height - screenPos.y; //fix y-flip

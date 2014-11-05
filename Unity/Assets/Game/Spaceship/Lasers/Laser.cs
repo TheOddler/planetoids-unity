@@ -40,10 +40,6 @@ public class Laser : MonoBehaviour {
 	
 	void UpdateColor() {
 		_color.a = (byte)(fadeTime / _manager.FadeTime * 255.0f);
-		Color32[] colors = _meshFilter.mesh.colors32;
-		for (int i = 0; i < _meshFilter.mesh.vertices.Length; ++i) {
-			colors[i] = _color;
-		}
-		_meshFilter.mesh.colors32 = colors;
+		Helpers.UpdateMeshColor(_meshFilter.mesh, _color);
 	}
 }
