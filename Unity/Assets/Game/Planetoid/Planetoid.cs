@@ -58,6 +58,12 @@ public class Planetoid : MonoBehaviour {
 		manager.CashPlanetoid(this);
 		yield break;
 	}
+	
+	void OnDisable() {
+		StopAllCoroutines();
+		//to make sure the fade away coroutine isn't still running when
+		//cashing all Planetoids and then recreating some.
+	}
 
 	public void Initialize (float size, int sideCount, PlanetoidsManager manager) {
 		// generate points

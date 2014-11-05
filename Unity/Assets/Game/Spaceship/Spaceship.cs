@@ -36,12 +36,10 @@ public class Spaceship : MonoBehaviour {
 	}
 	
 	void Start () {
-		Initialize();
-		
 		Helpers.UpdateMeshColor(GetComponent<MeshFilter>().mesh, _color);
 	}
 	
-	void Initialize() {
+	public void Reset() {
 		_health = _initialHealth;
 		transform.position = Vector2.zero;
 		
@@ -56,7 +54,7 @@ public class Spaceship : MonoBehaviour {
 				_touchStartPos = firstTouch.position;
 			}
 			else if (firstTouch.phase == TouchPhase.Ended) {
-				#if UNITY_EDITOR
+				#if UNITY_EDITOR && FALSE
 				Debug.Log("Tap time: " + (Time.timeSinceLevelLoad - _touchStartTime));
 				#endif
 				if (Time.timeSinceLevelLoad - _touchStartTime < _maxTapTime) {
