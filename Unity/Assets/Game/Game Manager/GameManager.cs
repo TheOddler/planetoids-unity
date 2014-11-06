@@ -1,6 +1,9 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 public class GameManager : MonoBehaviour {
 	
@@ -10,18 +13,33 @@ public class GameManager : MonoBehaviour {
 	public PlanetoidsManager _planetoidsManager;
 	public PlanetoidsManager PlanetoidsManager { get { return _planetoidsManager; } }
 	
+	public RectTransform _gameModeMenu;
+	
 	public ProgressBar _progressBar;
 	public ProgressBar ProgressBar { get { return _progressBar; } }
+	public Text _progressText;
+	public Text ProgressText { get { return _progressText; } }
 	
-	AGameMode _currentGameMode;
+	AGameMode _gameMode;
+	public List<AGameMode> _gameModes;
+	public bool GameRunning { get { return _gameMode != null && _gameMode.Running; } }
 	
-	void Awake () {
-		_currentGameMode = new GameModeTime(10, this);
+	public void StartGameMode(int index) {
+		if (index >= _gameModes.Count) throw new UnityException("Game Mode index out of range.");
+		
+		if (_gameMode != null) {
+			_gameMode.CleanUpGame();
+		}
+		
+		_gameMode = _gameModes[index];
+		_gameMode.StartGame();
+		
+		_gameModeMenu.gameObject.SetActive(false);
 	}
-
-	// Use this for initialization
-	void Start () {
-		_currentGameMode.Start();
+	public void StopGameMode() {
+		_gameMode.EndGame();
+		
+		_gameModeMenu.gameObject.SetActive(true);
 	}
 	
 }

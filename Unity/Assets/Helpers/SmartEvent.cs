@@ -13,11 +13,13 @@ public class SmartEvent {
 		_event += () => _beingCalled = false;
 	}
 	
-	public void Subscribe(Action action) {
-		_event += action;
-	}
-	public void Unsubscribe(Action action) {
-		_event -= action;
+	public void SetSubscription(bool sub, Action action) {
+		if (sub) {
+			_event += action;
+		}
+		else {
+			_event -= action;
+		}
 	}
 	
 	public void CallOnceAtEndOfFrame() {

@@ -11,4 +11,8 @@ public static class Helpers {
 		mesh.colors32 = colors;
 	}
 	
+	static public string SecondsToStringMMSShh(this float second) {
+		return Mathf.FloorToInt(second/60).ToString("00") + ":" + (second % 60).ToString("00.00");
+	}
+	
 }

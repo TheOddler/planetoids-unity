@@ -3,39 +3,72 @@ using System.Collections;
 
 public class GameModeTime : AGameMode {
 	
-	GameManager _manager;
-	int _planetoidCount = 10;
+	public GameManager _manager;
+	public int _planetoidCount = 10;
 	
 	float _areaAtStart;
+	float _startTime;
 	
-	public GameModeTime(int planetoidCount, GameManager manager) {
-		_planetoidCount = planetoidCount;
-		_manager = manager;
+	void Awake () {
+		gameObject.SetActive(false);
 	}
 	
+	override public bool Running { get { return gameObject.activeSelf; } }
 	
-	
-	override public void Start() {
-		_manager.ProgressBar.SetProgress(1.0f);
+	override public void StartGame() {
+		gameObject.SetActive(true);
+		
 		_manager.Spaceship.Reset();
 		_manager.PlanetoidsManager.CreatePlanetoids(_planetoidCount);
 		
-		PlanetoidsManager planetoidsManager = _manager.PlanetoidsManager;
-		planetoidsManager.PlanetoidEnteredPlay	.Subscribe(UpdateProgressBar);
-		planetoidsManager.PlanetoidLeftPlay		.Subscribe(UpdateProgressBar);
-		
 		_areaAtStart = CalculateAreaInPlay();
-	}
-	override public void End() {
-		_manager.PlanetoidsManager.CashAllPlanetoids();
+		_startTime = Time.timeSinceLevelLoad;
 		
-		PlanetoidsManager planetoidsManager = _manager.PlanetoidsManager;
-		planetoidsManager.PlanetoidEnteredPlay	.Unsubscribe(UpdateProgressBar);
-		planetoidsManager.PlanetoidLeftPlay		.Unsubscribe(UpdateProgressBar);
+		UpdateProgressInfo();
+		
+		SetSubscribtionToEvents(true);
+	}
+	override public void EndGame() {
+		gameObject.SetActive(false);
+		
+		SetSubscribtionToEvents(false);
+	}
+	override public void CleanUpGame() {
+		_manager.PlanetoidsManager.CashAllPlanetoids();
 	}
 	
-	void UpdateProgressBar() {
-		_manager.ProgressBar.SetProgress(CalculateAreaInPlay() / _areaAtStart);
+	void SetSubscribtionToEvents(bool sub) {
+		_manager.PlanetoidsManager.PlanetoidLeftPlay.SetSubscription(sub, OnPlanetoidsLeftPlay);
+		_manager.Spaceship.Died.SetSubscription(sub, OnGameLost);
+	}
+	
+	
+	
+	void OnGameLost() {
+		_manager.StopGameMode();
+	}
+	void OnGameWon() {
+		_manager.StopGameMode();
+	}
+	
+	
+	
+	void Update () {
+		float runningTime = Time.timeSinceLevelLoad - _startTime;
+		_manager.ProgressText.text = runningTime.SecondsToStringMMSShh();
+	}
+	
+	void OnPlanetoidsLeftPlay() {
+		UpdateProgressInfo();
+		
+		if (_manager.PlanetoidsManager.PlanetoidsInPlayCount == 0) {
+			OnGameWon();
+		}
+	}
+	
+	void UpdateProgressInfo() {
+		float percentage = Mathf.Clamp01(1 - (CalculateAreaInPlay() / _areaAtStart));
+		_manager.ProgressBar.SetProgress(percentage);
 	}
 	
 	float CalculateAreaInPlay() {

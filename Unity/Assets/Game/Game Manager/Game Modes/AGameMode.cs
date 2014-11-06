@@ -1,9 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public abstract class AGameMode {
+public abstract class AGameMode : MonoBehaviour {
 	
-	abstract public void Start();
-	abstract public void End();
+	abstract public bool Running { get; }
+	
+	abstract public void StartGame();
+	abstract public void EndGame();
+	abstract public void CleanUpGame();
 	
 }

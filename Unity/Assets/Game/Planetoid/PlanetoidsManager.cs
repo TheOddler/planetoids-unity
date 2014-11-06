@@ -27,6 +27,7 @@ public class PlanetoidsManager : MonoBehaviour {
 	
 	List<Planetoid> _planetoids = new List<Planetoid>(30);
 	public IEnumerable<Planetoid> PlanetoidsInPlay { get { return _planetoids; } }
+	public int PlanetoidsInPlayCount { get { return _planetoids.Count; } }
 	List<Planetoid> _cashedPlanetoids = new List<Planetoid>(30);
 	
 	public SmartEvent PlanetoidLeftPlay;

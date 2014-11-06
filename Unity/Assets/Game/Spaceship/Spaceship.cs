@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using System.Collections;
 
 [RequireComponent (typeof (Rigidbody2D))]
@@ -9,11 +10,13 @@ public class Spaceship : MonoBehaviour {
 	Rigidbody2D _rigidbody;
 	LaserManager _laserManager;
 	
+	public GameManager _gameManager;
 	public PlanetoidsManager _planetoidsManager;
 	
 	public Color32 _color;
 	
 	public float _shieldStrength = 100.0f;
+	public float _velocityDamageMax = 200.0f;
 	public float _initialHealth = 300;
 	float _health;
 	public ShieldVisuals _shieldVisuals;
@@ -30,9 +33,13 @@ public class Spaceship : MonoBehaviour {
 	float _touchStartTime = 0;
 	Vector2 _touchStartPos;
 	
+	public SmartEvent Died;
+	
 	void Awake () {
 		_rigidbody = GetComponent<Rigidbody2D>();
 		_laserManager = GetComponent<LaserManager>();
+		
+		Died = new SmartEvent(this);
 	}
 	
 	void Start () {
@@ -47,7 +54,7 @@ public class Spaceship : MonoBehaviour {
 	}
 	
 	void Update () {
-		if (Input.touchCount > 0) {
+		if (_gameManager.GameRunning && Input.touchCount > 0) {
 			var firstTouch = Input.GetTouch(0);
 			if (firstTouch.phase == TouchPhase.Began) {
 				_touchStartTime = Time.timeSinceLevelLoad;
@@ -95,7 +102,7 @@ public class Spaceship : MonoBehaviour {
 	}
 	
 	void FixedUpdate () {
-		if (Input.touchCount > 0) {
+		if (_gameManager.GameRunning && Input.touchCount > 0) {
 			var firstTouch = Input.GetTouch(0);
 			Vector2 touchPos = firstTouch.position;
 			Vector2 thisPos = Camera.main.WorldToScreenPoint(transform.position);
@@ -108,13 +115,29 @@ public class Spaceship : MonoBehaviour {
 	
 	void OnCollisionEnter2D(Collision2D collision) {
 		if ((_damagingLayers.value & (1 << collision.gameObject.layer)) > 0) {
-			_health -= CalculateDamage(collision.relativeVelocity, collision.rigidbody.mass);
+			Damage(CalculateDamage(collision.relativeVelocity, collision.rigidbody.mass));
+		}
+	}
+	
+	void Damage(float damage) {
+		if (_gameManager.GameRunning && _health > 0) {
+			_health -= damage;
 			UpdateShieldColor();
+			
+			if (_health <= 0) {
+				Died.CallOnceAtEndOfFrame();
+			}
 		}
 	}
 	
 	float CalculateDamage(Vector2 relativeVelocity, float otherMass) {
-		return relativeVelocity.sqrMagnitude * Mathf.Sqrt(otherMass) / _shieldStrength;
+		float magnitude = relativeVelocity.sqrMagnitude;
+		#if UNITY_EDITOR
+		if (magnitude > _velocityDamageMax) {
+			Debug.Log("Hit velocity damage max, would have been: " + magnitude + "; other mass: " + otherMass);
+		}
+		#endif
+		return Mathf.Min(magnitude, _velocityDamageMax) * otherMass / _shieldStrength;
 	}
 	
 	void UpdateShieldColor() {
