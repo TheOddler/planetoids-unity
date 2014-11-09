@@ -5,10 +5,12 @@ using System.Collections;
 [RequireComponent (typeof (Rigidbody2D))]
 [RequireComponent (typeof (LaserManager))]
 [RequireComponent (typeof (MeshFilter))]
+[RequireComponent (typeof (MeshRenderer))]
 public class Spaceship : MonoBehaviour {
 	
 	Rigidbody2D _rigidbody;
 	LaserManager _laserManager;
+	MeshRenderer _renderer;
 	
 	public GameManager _gameManager;
 	public PlanetoidsManager _planetoidsManager;
@@ -20,6 +22,7 @@ public class Spaceship : MonoBehaviour {
 	public float _initialHealth = 300;
 	float _health;
 	public ShieldVisuals _shieldVisuals;
+	public ParticleSystem _deathParticles;
 	
 	public float _moveForce = 10;
 	public LayerMask _damagingLayers;
@@ -38,19 +41,36 @@ public class Spaceship : MonoBehaviour {
 	void Awake () {
 		_rigidbody = GetComponent<Rigidbody2D>();
 		_laserManager = GetComponent<LaserManager>();
+		_renderer = GetComponent<MeshRenderer>();
 		
 		Died = new SmartEvent(this);
 	}
 	
 	void Start () {
 		Helpers.UpdateMeshColor(GetComponent<MeshFilter>().mesh, _color);
+		Died.SetSubscription(true, DoDeathEffect);
 	}
 	
 	public void Reset() {
 		_health = _initialHealth;
 		transform.position = Vector2.zero;
 		
+		SetDeathEffect(false);
+		
 		UpdateShieldColor();
+	}
+	void DoDeathEffect() {
+		SetDeathEffect(true);
+	}
+	void SetDeathEffect(bool active) {
+		_deathParticles.Clear();
+		if (active) _deathParticles.Play();
+		else _deathParticles.Stop();
+		
+		
+		_shieldVisuals.gameObject.SetActive(!active);
+		_renderer.enabled = !active;
+		_rigidbody.simulated = !active;
 	}
 	
 	void Update () {
@@ -147,7 +167,7 @@ public class Spaceship : MonoBehaviour {
 	
 	
 	
-	#if UNITY_EDITOR
+	#if UNITY_EDITOR && false
 	void OnGUI () {
 		var screenPos = Camera.main.WorldToScreenPoint(_rigidbody.worldCenterOfMass);
 		screenPos.y = Screen.height - screenPos.y; //fix y-flip

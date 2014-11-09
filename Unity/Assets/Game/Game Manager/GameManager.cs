@@ -14,6 +14,7 @@ public class GameManager : MonoBehaviour {
 	public PlanetoidsManager PlanetoidsManager { get { return _planetoidsManager; } }
 	
 	public RectTransform _gameMenu;
+	public float _gameMenuShowDelay = 2.0f;
 	
 	public ProgressBar _progressBar;
 	public ProgressBar ProgressBar { get { return _progressBar; } }
@@ -50,6 +51,10 @@ public class GameManager : MonoBehaviour {
 	public void StopGameMode() {
 		_gameMode.EndGame();
 		
+		StartCoroutine(DelayShowGameMenu());
+	}
+	IEnumerator DelayShowGameMenu() {
+		yield return new WaitForSeconds(_gameMenuShowDelay);
 		_gameMenu.gameObject.SetActive(true);
 	}
 	
