@@ -115,7 +115,7 @@ public class Spaceship : MonoBehaviour {
 	
 	void OnCollisionEnter2D(Collision2D collision) {
 		if ((_damagingLayers.value & (1 << collision.gameObject.layer)) > 0) {
-			Damage(CalculateDamage(collision.relativeVelocity, collision.rigidbody.mass));
+			Damage(CalculateDamage(collision.relativeVelocity, collision.rigidbody));
 		}
 	}
 	
@@ -130,14 +130,14 @@ public class Spaceship : MonoBehaviour {
 		}
 	}
 	
-	float CalculateDamage(Vector2 relativeVelocity, float otherMass) {
+	float CalculateDamage(Vector2 relativeVelocity, Rigidbody2D other) {
 		float magnitude = relativeVelocity.sqrMagnitude;
-		#if UNITY_EDITOR
+		#if UNITY_EDITOR && false
 		if (magnitude > _velocityDamageMax) {
-			Debug.Log("Hit velocity damage max, would have been: " + magnitude + "; other mass: " + otherMass);
+			Debug.Log("Hit velocity damage max, would have been: " + magnitude + "; other mass: " + other.mass);
 		}
 		#endif
-		return Mathf.Min(magnitude, _velocityDamageMax) * otherMass / _shieldStrength;
+		return Mathf.Min(magnitude, _velocityDamageMax) / _shieldStrength;
 	}
 	
 	void UpdateShieldColor() {
@@ -147,7 +147,7 @@ public class Spaceship : MonoBehaviour {
 	
 	
 	
-	#if UNITY_EDITOR && FALSE
+	#if UNITY_EDITOR
 	void OnGUI () {
 		var screenPos = Camera.main.WorldToScreenPoint(_rigidbody.worldCenterOfMass);
 		screenPos.y = Screen.height - screenPos.y; //fix y-flip

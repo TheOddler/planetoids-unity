@@ -5,6 +5,8 @@ using System.Collections.Generic;
 
 public class PlanetoidsManager : MonoBehaviour {
 	
+	public Spaceship _spaceship;
+	
 	public int _initialPlanetoidCount = 10;
 	public float _planetoidSize = 3;
 	public int _planetoidPointCount = 5;
@@ -44,7 +46,7 @@ public class PlanetoidsManager : MonoBehaviour {
 		}
 	}
 	
-	public void CreatePlanetoid () {
+	public Planetoid CreatePlanetoid () {
 		Vector2 bottomLeft = Camera.main.ViewportToWorldPoint(Vector2.zero);
 		bottomLeft.x += _planetoidSize;
 		bottomLeft.y += _planetoidSize;
@@ -54,17 +56,24 @@ public class PlanetoidsManager : MonoBehaviour {
 		
 		Vector2 pos = new Vector2();
 		do {
+			#if UNITY_EDITOR
+			if (pos != Vector2.zero) {
+				Debug.DrawLine(pos - Vector2.up, pos + Vector2.up, Color.red, 2);
+				Debug.DrawLine(pos - Vector2.right, pos + Vector2.right, Color.red, 2);
+			}
+			#endif
 			pos.x = UnityEngine.Random.Range(bottomLeft.x, topRight.x);
 			pos.y = UnityEngine.Random.Range(bottomLeft.y, topRight.y);
-		} while (Vector2.Distance(pos, Vector2.zero) < _centerDeadZoneSize);
+		} while (Vector2.Distance(pos, _spaceship.transform.position) < _centerDeadZoneSize);
 		
-		CreatePlanetoid(pos);
+		return CreatePlanetoid(pos);
 	}
 	
-	public void CreatePlanetoid(Vector2 pos) {
+	public Planetoid CreatePlanetoid(Vector2 pos) {
 		Planetoid newPlanetoid = GetNewOrCashedPlanetoid();
 		newPlanetoid.transform.position = pos;
 		newPlanetoid.Initialize(_planetoidSize, _planetoidPointCount, this);
+		return newPlanetoid;
 	}
 	
 	

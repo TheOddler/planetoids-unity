@@ -14,6 +14,7 @@ public struct SlicePoint {
 [RequireComponent (typeof (Rigidbody2D))]
 [RequireComponent (typeof (PolygonCollider2D))]
 [RequireComponent (typeof (MeshFilter))]
+[RequireComponent (typeof (MeshRenderer))]
 public class Planetoid : MonoBehaviour {
 
 	const float STEP_OFFSET = 0.05f; // in %

@@ -32,6 +32,7 @@ public class Laser : MonoBehaviour {
 		fadeTime -= Time.deltaTime;
 		
 		UpdateColor();
+		transform.localScale = new Vector3(fadeTime / _manager.FadeTime, 1, 1);
 		
 		if (fadeTime <= 0) {
 			_manager.EndLaser(this);

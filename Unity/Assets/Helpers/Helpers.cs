@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public static class Helpers {
 	
@@ -11,8 +12,15 @@ public static class Helpers {
 		mesh.colors32 = colors;
 	}
 	
-	static public string SecondsToStringMMSShh(this float second) {
-		return Mathf.FloorToInt(second/60).ToString("00") + ":" + (second % 60).ToString("00.00");
+	static public string SecondsToStringMMSShh(this float seconds) {
+		return Mathf.FloorToInt(seconds/60).ToString("00") + ":" + (seconds % 60).ToString("00.00");
+	}
+	static public long SecondsToMiliseconds(this float seconds) {
+		return (long)(seconds * 1000.0f + 0.5f);
+	}
+	
+	static public T GetRandom<T>(this List<T> list) {
+		return list[Random.Range(0,list.Count)];
 	}
 	
 }

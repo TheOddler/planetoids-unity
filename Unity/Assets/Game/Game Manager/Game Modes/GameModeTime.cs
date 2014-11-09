@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class GameModeTime : AGameMode {
 	
@@ -8,6 +9,10 @@ public class GameModeTime : AGameMode {
 	
 	float _areaAtStart;
 	float _startTime;
+	
+	public List<string> _winMessages;
+	public List<string> _recordMessages;
+	public List<string> _looseMessages;
 	
 	void Awake () {
 		gameObject.SetActive(false);
@@ -45,9 +50,23 @@ public class GameModeTime : AGameMode {
 	
 	
 	void OnGameLost() {
+		float percentage = Mathf.Clamp01(1 - (CalculateAreaInPlay() / _areaAtStart));
+		_manager.WinLooseMessage.text = _looseMessages.GetRandom() + "\n" + (percentage * 100.0f).ToString("0.0") + "% done";
+		_manager.ProgressText.text = "You lost, try again?";
+		
 		_manager.StopGameMode();
 	}
 	void OnGameWon() {
+		float runningTime = Time.timeSinceLevelLoad - _startTime;
+		if (false) { //TODO New Record
+			_manager.WinLooseMessage.text =  _recordMessages.GetRandom() + "\n" + runningTime.SecondsToStringMMSShh();
+			_manager.ProgressText.text = "A new record! Try to beat it again?";
+		}
+		else {
+			_manager.WinLooseMessage.text =  _winMessages.GetRandom() + "\n" + runningTime.SecondsToStringMMSShh();
+			_manager.ProgressText.text = "But no new record, try again?";
+		}
+		
 		_manager.StopGameMode();
 	}
 	
