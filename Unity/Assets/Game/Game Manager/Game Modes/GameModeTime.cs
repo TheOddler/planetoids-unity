@@ -1,8 +1,11 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
 public class GameModeTime : AGameMode {
+	
+	public const string TIME_TRIAL_LEADERBOARD_ID = "CgkIgr_5uO8aEAIQAA";
 	
 	public GameManager _manager;
 	public int _planetoidCount = 10;
@@ -10,9 +13,43 @@ public class GameModeTime : AGameMode {
 	float _areaAtStart;
 	float _startTime;
 	
+	long _curRecord;
+	public long CurrentRecord {
+		get { return _curRecord; }
+		private set {
+			_curRecord = value; //0 is assumed to be 'no record yet'
+			if (_curRecord > 0) {
+				_recordText.text = "Record:\n" + _curRecord.MilisecondsToStringMMSShh(); 
+			}
+			else {
+				_recordText.text = "Record:\nNone";
+			}
+		}
+	}
+	public bool UpdateRecord(long newRecord) {
+		if (_curRecord == 0 && newRecord == 0) {
+			CurrentRecord = 0; //so the text gets updated.
+			return false;
+		}
+		if (newRecord == 0) {
+			return false;
+		}
+		if (_curRecord == 0) {
+			CurrentRecord = newRecord;
+			return true;
+		}
+		if (newRecord < _curRecord) {
+			CurrentRecord = newRecord;
+			return true;
+		}
+		
+		return false;
+	}
+	
 	public List<string> _winMessages;
 	public List<string> _recordMessages;
 	public List<string> _looseMessages;
+	public Text _recordText; 
 	
 	void Awake () {
 		gameObject.SetActive(false);
@@ -58,16 +95,29 @@ public class GameModeTime : AGameMode {
 	}
 	void OnGameWon() {
 		float runningTime = Time.timeSinceLevelLoad - _startTime;
-		if (false) { //TODO New Record
-			_manager.WinLooseMessage.text =  _recordMessages.GetRandom() + "\n" + runningTime.SecondsToStringMMSShh();
+		long currentScore = runningTime.SecondsToMiliseconds();
+		
+		if (Social.localUser.authenticated) {
+			Social.ReportScore(currentScore, TIME_TRIAL_LEADERBOARD_ID, (bool success) => {
+				CheckScore(currentScore);
+				_manager.StopGameMode();
+			});
+		}
+		else {
+			CheckScore(currentScore);
+			_manager.StopGameMode();
+		}
+	}
+	void CheckScore(long currentScore) {
+		if (CurrentRecord == 0 || currentScore < CurrentRecord) { //New Record
+			CurrentRecord = currentScore;
+			_manager.WinLooseMessage.text =  _recordMessages.GetRandom() + "\n" + currentScore.MilisecondsToStringMMSShh();
 			_manager.ProgressText.text = "A new record! Try to beat it again?";
 		}
 		else {
-			_manager.WinLooseMessage.text =  _winMessages.GetRandom() + "\n" + runningTime.SecondsToStringMMSShh();
+			_manager.WinLooseMessage.text =  _winMessages.GetRandom() + "\n" + currentScore.MilisecondsToStringMMSShh();
 			_manager.ProgressText.text = "But no new record, try again?";
 		}
-		
-		_manager.StopGameMode();
 	}
 	
 	

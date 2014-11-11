@@ -1,8 +1,11 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
 public class GameModeArea : AGameMode {
+	
+	public const string AREA_ATTACK_LEADERBOARD_ID = "CgkIgr_5uO8aEAIQAQ";
 	
 	public GameManager _manager;
 	public float _minWantedArea = 10;
@@ -11,8 +14,32 @@ public class GameModeArea : AGameMode {
 	float _totalDestroyedArea;
 	float _lastInGameArea;
 	
+	long _curRecord;
+	public long CurrentRecord {
+		get { return _curRecord; }
+		private set {
+			_curRecord = value;
+			if (_curRecord > 0) {
+				_recordText.text = "Record:\n" + _curRecord.TwoDecimalAreaToString() + " m²";
+			}
+			else {
+				_recordText.text = "Record:\nNone";
+			}
+		}
+	}
+	public bool UpdateRecord(long newRecord) {
+		if (newRecord > _curRecord) {
+			CurrentRecord = newRecord;
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	
 	public List<string> _finishMessages;
 	public List<string> _recordMessages;
+	public Text _recordText; 
 	
 	void Awake () {
 		gameObject.SetActive(false);
@@ -56,18 +83,30 @@ public class GameModeArea : AGameMode {
 	
 	
 	void OnGameFinished() {
-		if (false) { //TODO New Record
-			_manager.WinLooseMessage.text =  _recordMessages.GetRandom() + "\n" + _totalDestroyedArea.ToString("0.000") + " m²";
+		long currentScore = _totalDestroyedArea.AreaToLongTwoDecimal();
+		
+		if (Social.localUser.authenticated) {
+			Social.ReportScore(currentScore, AREA_ATTACK_LEADERBOARD_ID, (bool success) => {
+				CheckScore(currentScore);
+				_manager.StopGameMode();
+			});
+		}
+		else {
+			CheckScore(currentScore);
+			_manager.StopGameMode();
+		}
+	}
+	void CheckScore(long currentScore) {
+		if (currentScore > CurrentRecord) { //TODO New Record
+			CurrentRecord = currentScore;
+			_manager.WinLooseMessage.text =  _recordMessages.GetRandom() + "\n" + currentScore.TwoDecimalAreaToString() + " m²";
 			_manager.ProgressText.text = "A new record! Try to beat it again?";
 		}
 		else {
-			_manager.WinLooseMessage.text =  _finishMessages.GetRandom() + "\n" + _totalDestroyedArea.ToString("0.000") + " m²";
+			_manager.WinLooseMessage.text =  _finishMessages.GetRandom() + "\n" + currentScore.TwoDecimalAreaToString() + " m²";
 			_manager.ProgressText.text = "But no new record, try again?";
 		}
-		
-		_manager.StopGameMode();
 	}
-	
 	
 	
 	void Update () {
