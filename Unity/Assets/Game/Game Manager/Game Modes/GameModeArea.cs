@@ -6,6 +6,8 @@ using System.Collections.Generic;
 public class GameModeArea : AGameMode {
 	
 	public const string AREA_ATTACK_LEADERBOARD_ID = "CgkIgr_5uO8aEAIQAQ";
+	public const string AREA_ATTACK_RECORD_PLAYERPREF_ID = "AreaAttackRecord";
+	public const string AREA_FORMAT = @"0.000 m²";
 	
 	public GameManager _manager;
 	public float _minWantedArea = 10;
@@ -14,28 +16,8 @@ public class GameModeArea : AGameMode {
 	float _totalDestroyedArea;
 	float _lastInGameArea;
 	
-	long _curRecord;
-	public long CurrentRecord {
-		get { return _curRecord; }
-		private set {
-			_curRecord = value;
-			if (_curRecord > 0) {
-				_recordText.text = "Record:\n" + _curRecord.TwoDecimalAreaToString() + " m²";
-			}
-			else {
-				_recordText.text = "Record:\nNone";
-			}
-		}
-	}
-	public bool UpdateRecord(long newRecord) {
-		if (newRecord > _curRecord) {
-			CurrentRecord = newRecord;
-			return true;
-		}
-		else {
-			return false;
-		}
-	}
+	float _curRecord;
+	public float CurrentRecord { get { return _curRecord; } }
 	
 	public List<string> _finishMessages;
 	public List<string> _recordMessages;
@@ -43,6 +25,11 @@ public class GameModeArea : AGameMode {
 	
 	void Awake () {
 		gameObject.SetActive(false);
+		
+		_manager.SetupFinished.SetSubscription(true, LoadKnownRecord);
+		
+		_manager.GooglePlayAuthenticated.SetSubscription(true, SaveRecord);
+		_manager.GooglePlayAuthenticated.SetSubscription(true, LoadGooglePlayRecord);
 	}
 	
 	override public bool Running { get { return gameObject.activeSelf; } }
@@ -83,30 +70,57 @@ public class GameModeArea : AGameMode {
 	
 	
 	void OnGameFinished() {
-		long currentScore = _totalDestroyedArea.AreaToLongTwoDecimal();
-		
-		if (Social.localUser.authenticated) {
-			Social.ReportScore(currentScore, AREA_ATTACK_LEADERBOARD_ID, (bool success) => {
-				CheckScore(currentScore);
-				_manager.StopGameMode();
-			});
-		}
-		else {
-			CheckScore(currentScore);
-			_manager.StopGameMode();
-		}
-	}
-	void CheckScore(long currentScore) {
-		if (currentScore > CurrentRecord) { //TODO New Record
-			CurrentRecord = currentScore;
-			_manager.WinLooseMessage.text =  _recordMessages.GetRandom() + "\n" + currentScore.TwoDecimalAreaToString() + " m²";
+		if (ReportArea(_totalDestroyedArea)) {
+			//New record!
+			_manager.WinLooseMessage.text =  _recordMessages.GetRandom() + "\n" + _totalDestroyedArea.ToString(AREA_FORMAT);
 			_manager.ProgressText.text = "A new record! Try to beat it again?";
 		}
 		else {
-			_manager.WinLooseMessage.text =  _finishMessages.GetRandom() + "\n" + currentScore.TwoDecimalAreaToString() + " m²";
+			_manager.WinLooseMessage.text =  _finishMessages.GetRandom() + "\n" + _totalDestroyedArea.ToString(AREA_FORMAT);
 			_manager.ProgressText.text = "But no new record, try again?";
 		}
+		
+		_manager.StopGameMode();
 	}
+	
+	// returns true if it's a record
+	public bool ReportArea(float area) {
+		if (area > _curRecord) {
+			_curRecord = area;
+			UpdateRecordText();
+			SaveRecord();
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	void UpdateRecordText() {
+		_recordText.text = "Record:\n" + _curRecord.ToString(AREA_FORMAT);
+	}
+	void SaveRecord() {
+		// In playerprefs
+		PlayerPrefs.SetFloat(AREA_ATTACK_RECORD_PLAYERPREF_ID, _curRecord);
+		// In google play services if active
+		if (Social.localUser.authenticated) {
+			long threeDecimals = FloatToLongThreeDecimal(_curRecord);
+			Social.ReportScore(threeDecimals, AREA_ATTACK_LEADERBOARD_ID, (bool success) => {});
+		}
+	}
+	void LoadKnownRecord() {
+		ReportArea(PlayerPrefs.GetFloat(AREA_ATTACK_RECORD_PLAYERPREF_ID, 0.0f));
+	}
+	void LoadGooglePlayRecord() {
+		// TODO Add GooglePlayServices stuff
+	}
+	static public long FloatToLongThreeDecimal(float area) {
+		return (long)(area * 1000.0f + 0.5f);
+	}
+	static public string ThreeDecimalAreaToString(long area) {
+		return (area / 1000).ToString() + "." + (area % 1000).ToString();
+	}
+	
+	
 	
 	
 	void Update () {

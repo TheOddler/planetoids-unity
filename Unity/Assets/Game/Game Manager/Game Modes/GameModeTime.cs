@@ -1,50 +1,25 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 public class GameModeTime : AGameMode {
 	
 	public const string TIME_TRIAL_LEADERBOARD_ID = "CgkIgr_5uO8aEAIQAA";
+	public const string TIME_TRIAL_RECORD_PLAYERPREF_ID = "TimeTrialRecord";
+	
+	public const string TIME_FORMAT = @"mm\:ss.ff";
 	
 	public GameManager _manager;
 	public int _planetoidCount = 10;
 	
 	float _areaAtStart;
-	float _startTime;
+	Stopwatch _stopwatch = new Stopwatch();
 	
-	long _curRecord;
-	public long CurrentRecord {
-		get { return _curRecord; }
-		private set {
-			_curRecord = value; //0 is assumed to be 'no record yet'
-			if (_curRecord > 0) {
-				_recordText.text = "Record:\n" + _curRecord.MilisecondsToStringMMSShh(); 
-			}
-			else {
-				_recordText.text = "Record:\nNone";
-			}
-		}
-	}
-	public bool UpdateRecord(long newRecord) {
-		if (_curRecord == 0 && newRecord == 0) {
-			CurrentRecord = 0; //so the text gets updated.
-			return false;
-		}
-		if (newRecord == 0) {
-			return false;
-		}
-		if (_curRecord == 0) {
-			CurrentRecord = newRecord;
-			return true;
-		}
-		if (newRecord < _curRecord) {
-			CurrentRecord = newRecord;
-			return true;
-		}
-		
-		return false;
-	}
+	TimeSpan _curRecord = TimeSpan.MaxValue;
+	public TimeSpan CurrentRecord { get { return _curRecord; } }
 	
 	public List<string> _winMessages;
 	public List<string> _recordMessages;
@@ -53,6 +28,11 @@ public class GameModeTime : AGameMode {
 	
 	void Awake () {
 		gameObject.SetActive(false);
+		
+		_manager.SetupFinished.SetSubscription(true, LoadKnownRecord);
+		
+		_manager.GooglePlayAuthenticated.SetSubscription(true, SaveRecord);
+		_manager.GooglePlayAuthenticated.SetSubscription(true, LoadGooglePlayRecord);
 	}
 	
 	override public bool Running { get { return gameObject.activeSelf; } }
@@ -64,7 +44,7 @@ public class GameModeTime : AGameMode {
 		_manager.PlanetoidsManager.CreatePlanetoids(_planetoidCount);
 		
 		_areaAtStart = CalculateAreaInPlay();
-		_startTime = Time.timeSinceLevelLoad;
+		_stopwatch.Start();
 		
 		UpdateProgressInfo();
 		
@@ -72,6 +52,7 @@ public class GameModeTime : AGameMode {
 	}
 	override public void EndGame() {
 		gameObject.SetActive(false);
+		_stopwatch.Stop();
 		
 		SetSubscribtionToEvents(false);
 	}
@@ -94,37 +75,54 @@ public class GameModeTime : AGameMode {
 		_manager.StopGameMode();
 	}
 	void OnGameWon() {
-		float runningTime = Time.timeSinceLevelLoad - _startTime;
-		long currentScore = runningTime.SecondsToMiliseconds();
-		
-		if (Social.localUser.authenticated) {
-			Social.ReportScore(currentScore, TIME_TRIAL_LEADERBOARD_ID, (bool success) => {
-				CheckScore(currentScore);
-				_manager.StopGameMode();
-			});
-		}
-		else {
-			CheckScore(currentScore);
-			_manager.StopGameMode();
-		}
-	}
-	void CheckScore(long currentScore) {
-		if (CurrentRecord == 0 || currentScore < CurrentRecord) { //New Record
-			CurrentRecord = currentScore;
-			_manager.WinLooseMessage.text =  _recordMessages.GetRandom() + "\n" + currentScore.MilisecondsToStringMMSShh();
+		_stopwatch.Stop();
+		TimeSpan currentTime = _stopwatch.Elapsed;
+		if (ReportTime(currentTime)) {
+			// a new record!
+			_manager.WinLooseMessage.text =  _recordMessages.GetRandom() + "\n" + currentTime.ToString(TIME_FORMAT);
 			_manager.ProgressText.text = "A new record! Try to beat it again?";
 		}
 		else {
-			_manager.WinLooseMessage.text =  _winMessages.GetRandom() + "\n" + currentScore.MilisecondsToStringMMSShh();
+			_manager.WinLooseMessage.text =  _winMessages.GetRandom() + "\n" + currentTime.ToString(TIME_FORMAT);
 			_manager.ProgressText.text = "But no new record, try again?";
 		}
+		
+		_manager.StopGameMode();
 	}
+	// returns true if it's a record
+	public bool ReportTime(TimeSpan time) {
+		if (_curRecord.CompareTo(time) > 0) { //smaller is better
+			_curRecord = time;
+			UpdateRecordText();
+			SaveRecord();
+			return true;
+		}
+		else return false;
+	}
+	void UpdateRecordText() {
+		_recordText.text = "Record:\n" + _curRecord.ToString(TIME_FORMAT);
+	}
+	void SaveRecord() {
+		// In playerprefs
+		PlayerPrefsExt.SetTimeSpan(TIME_TRIAL_RECORD_PLAYERPREF_ID, _curRecord);
+		// In google play services if active
+		if (Social.localUser.authenticated) {
+			long miliseconds = _curRecord.Ticks / TimeSpan.TicksPerMillisecond;
+			Social.ReportScore(miliseconds, TIME_TRIAL_LEADERBOARD_ID, (bool success) => {});
+		}
+	}
+	void LoadKnownRecord() {
+		ReportTime(PlayerPrefsExt.GetTimeSpan(TIME_TRIAL_RECORD_PLAYERPREF_ID, TimeSpan.MaxValue));
+	}
+	void LoadGooglePlayRecord() {
+		// TODO Add GooglePlayServices stuff
+	}
+	
 	
 	
 	
 	void Update () {
-		float runningTime = Time.timeSinceLevelLoad - _startTime;
-		_manager.ProgressText.text = runningTime.SecondsToStringMMSShh();
+		_manager.ProgressText.text = _stopwatch.Elapsed.ToString(TIME_FORMAT);
 	}
 	
 	void OnPlanetoidsLeftPlay() {

@@ -10,10 +10,6 @@ using UnityEngine.SocialPlatforms;
 
 public class GameManager : MonoBehaviour {
 	
-	public const string PP_USES_GOOGLEPLAY = "PlayerUsesGooglePlay";
-	public const int PP_TRUE = 1;
-	public const int PP_FALSE = 0;
-	
 	public Spaceship _spaceship;
 	public Spaceship Spaceship { get { return _spaceship; } }
 	
@@ -55,36 +51,24 @@ public class GameManager : MonoBehaviour {
 		#endif
 		PlayGamesPlatform.Activate();
 		
-		TryAuthenticateGooglePlay(false, () => SetupFinished.CallOnceAtEndOfFrame());
+		SetupFinished.CallOnceAtEndOfFrame();
 	}
-	void TryAuthenticateGooglePlay(bool forceRetry, Action onFinished) {
-		_gameMenu.gameObject.SetActive(false);
-		
-		bool isFirstTime = !PlayerPrefs.HasKey(PP_USES_GOOGLEPLAY);
-		bool usesGooglePlay = PlayerPrefs.GetInt(PP_USES_GOOGLEPLAY,PP_FALSE) == PP_TRUE;
-		if (forceRetry || isFirstTime || usesGooglePlay ) {
-			Social.localUser.Authenticate((bool success) => {
-				onFinished();
-				if (success) {
-					GooglePlayAuthenticated.CallOnceAtEndOfFrame();
-				}
-				_gameMenu.gameObject.SetActive(true);
-				
-				if (isFirstTime || forceRetry) { //remember preference
-					PlayerPrefs.SetInt(PP_USES_GOOGLEPLAY, success ? PP_TRUE : PP_FALSE );
-				}
-			});
-		}
-		else /* !forceRetry && !isFirstTime && !usesGoogleplay */ {
-			onFinished();
-			_gameMenu.gameObject.SetActive(true);
-		}
+	void TryAuthenticateGooglePlay(Action successCallback) {
+		Social.localUser.Authenticate((bool success) => {
+			if (success) {
+				GooglePlayAuthenticated.CallOnceAtEndOfFrame();
+				successCallback();
+			}
+			else {
+				_notLoggedInIndicator.SetActive(true);
+			}
+		});
 	}
 	
 	
 	void Update () {
-		if (Input.GetKeyDown(KeyCode.Escape)) {
-			WinLooseMessage.text = "Why did you give up?";
+		if (GameRunning && Input.GetKeyDown(KeyCode.Escape)) {
+			WinLooseMessage.text = "Why give up?";
 			ProgressText.text = "Want to try again?";
 			
 			StopGameModeImmediately();
@@ -127,7 +111,7 @@ public class GameManager : MonoBehaviour {
 			Social.ShowLeaderboardUI();
 		}
 		else {
-			TryAuthenticateGooglePlay(true, ()=>{});
+			TryAuthenticateGooglePlay(Social.ShowLeaderboardUI);
 		}
 	}
 	

@@ -85,17 +85,19 @@ public class Spaceship : MonoBehaviour {
 				Debug.Log("Tap time: " + (Time.timeSinceLevelLoad - _touchStartTime));
 				#endif
 				if (Time.timeSinceLevelLoad - _touchStartTime < _maxTapTime) {
-					Vector2 touchScreenPos = AutoAimPosition(_touchStartPos);
-					Vector2 shipScreenPos = Camera.main.WorldToScreenPoint(transform.position);
-					
-					Vector2 laserDir = touchScreenPos - shipScreenPos;
-					
-					Ray2D laserRay = new Ray2D(transform.position, laserDir);
-					_planetoidsManager.SlicePlanetoids(laserRay, _laserPower);
-					_laserManager.StartLaser(laserRay);
+					FireLaser(AutoAimPosition(_touchStartPos));
 				}
 			}
 		}
+	}
+	void FireLaser(Vector2 touchScreenPos) {
+		Vector2 shipScreenPos = Camera.main.WorldToScreenPoint(transform.position);
+		
+		Vector2 laserDir = touchScreenPos - shipScreenPos;
+		
+		Ray2D laserRay = new Ray2D(transform.position, laserDir);
+		_planetoidsManager.SlicePlanetoids(laserRay, _laserPower);
+		_laserManager.StartLaser(laserRay);
 	}
 	
 	Vector2 AutoAimPosition (Vector2 touchScreenPos) {
