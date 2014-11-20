@@ -71,7 +71,7 @@ public class GameManager : MonoBehaviour {
 			WinLooseMessage.text = "Why give up?";
 			ProgressText.text = "Want to try again?";
 			
-			StopGameModeImmediately();
+			StopGameMode(true);
 		}
 	}
 	
@@ -87,19 +87,17 @@ public class GameManager : MonoBehaviour {
 		
 		_gameMenu.gameObject.SetActive(false);
 	}
-	public void StopGameMode() {
+	public void StopGameMode(bool instantly = false) {
 		_gameMode.EndGame();
 		
 		GameModeEnded.CallOnceAtEndOfFrame();
 		
-		StartCoroutine(DelayShowGameMenu());
-	}
-	public void StopGameModeImmediately() {
-		_gameMode.EndGame();
-		
-		GameModeEnded.CallOnceAtEndOfFrame();
-		
-		_gameMenu.gameObject.SetActive(true);
+		if (instantly) {
+			_gameMenu.gameObject.SetActive(true);
+		}
+		else {
+			StartCoroutine(DelayShowGameMenu());
+		}
 	}
 	IEnumerator DelayShowGameMenu() {
 		yield return new WaitForSeconds(_gameMenuShowDelay);

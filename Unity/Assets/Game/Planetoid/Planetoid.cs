@@ -27,6 +27,7 @@ public class Planetoid : MonoBehaviour {
 
 	public float _density = 1.0f;
 	public bool _fading = false;
+	public bool Fading { get { return _fading; } }
 	public Color32 _color;
 
 	public Vector2 WorldCenterOfMass {

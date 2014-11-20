@@ -2,6 +2,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 public class PlanetoidsManager : MonoBehaviour {
 	
@@ -31,6 +32,11 @@ public class PlanetoidsManager : MonoBehaviour {
 	public IEnumerable<Planetoid> PlanetoidsInPlay { get { return _planetoids; } }
 	public int PlanetoidsInPlayCount { get { return _planetoids.Count; } }
 	List<Planetoid> _cashedPlanetoids = new List<Planetoid>(30);
+	public bool AllFading {
+		get {
+			return _planetoids.All(p=>p.Fading);
+		}
+	}
 	
 	public SmartEvent PlanetoidLeftPlay;
 	public SmartEvent PlanetoidEnteredPlay;

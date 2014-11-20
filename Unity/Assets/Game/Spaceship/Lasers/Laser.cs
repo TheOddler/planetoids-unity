@@ -5,6 +5,7 @@ using System.Collections;
 public class Laser : MonoBehaviour {
 	
 	public const float LASER_DISTANCE = 100.0f;
+	public const float LASER_Z_DEPTH = 1.0f;
 	
 	MeshFilter _meshFilter;
 	
@@ -23,7 +24,7 @@ public class Laser : MonoBehaviour {
 	
 	public void StartLaser(Ray2D laser) {
 		fadeTime = _manager.FadeTime;
-		transform.position = laser.origin;
+		transform.position = new Vector3(laser.origin.x,laser.origin.y,LASER_Z_DEPTH);
 		transform.rotation = Quaternion.LookRotation(laser.direction, Vector3.forward);
 		UpdateColor();
 	}
