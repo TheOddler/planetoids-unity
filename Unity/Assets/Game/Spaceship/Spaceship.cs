@@ -156,13 +156,11 @@ public class Spaceship : MonoBehaviour {
 	void FireLaser(Planetoid autoAimPlanetoid, Vector2 screenTouchPos) {
 		Vector2 shipScreenPos = Camera.main.WorldToScreenPoint(transform.position);
 
-		Vector2 laserDir;
-		if (autoAimPlanetoid == null) {
-			laserDir = screenTouchPos - shipScreenPos;
+		if (autoAimPlanetoid != null) {
+			screenTouchPos = (Vector2)Camera.main.WorldToScreenPoint(autoAimPlanetoid.WorldCenterOfMass);
 		}
-		else {
-			laserDir = (Vector2)Camera.main.WorldToScreenPoint(autoAimPlanetoid.WorldCenterOfMass);
-		}
+		Vector2 laserDir = screenTouchPos - shipScreenPos;
+		
 		
 		Ray2D laserRay = new Ray2D(transform.position, laserDir);
 		_planetoidsManager.SlicePlanetoids(laserRay, _laserPower);
