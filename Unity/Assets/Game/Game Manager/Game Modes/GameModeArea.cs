@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public class GameModeArea : AGameMode {
 	
 	public const string AREA_ATTACK_LEADERBOARD_ID = "CgkIgr_5uO8aEAIQAQ";
-	public const string AREA_ATTACK_RECORD_PLAYERPREF_ID = "AreaAttackRecord";
+	public const string AREA_ATTACK_RECORD_PLAYERPREF_ID = "Record_AreaAttack";
 	public const string AREA_FORMAT = @"0.000 m²";
 	
 	public GameManager _manager;
@@ -100,7 +100,7 @@ public class GameModeArea : AGameMode {
 	}
 	void SaveRecord() {
 		// In playerprefs
-		PlayerPrefs.SetFloat(AREA_ATTACK_RECORD_PLAYERPREF_ID, _curRecord);
+		PlayerPrefsExt.SetFloatEncrypted(AREA_ATTACK_RECORD_PLAYERPREF_ID, _curRecord);
 		// In google play services if active
 		if (Social.localUser.authenticated) {
 			long threeDecimals = FloatToLongThreeDecimal(_curRecord);
@@ -108,7 +108,7 @@ public class GameModeArea : AGameMode {
 		}
 	}
 	void LoadKnownRecord() {
-		ReportArea(PlayerPrefs.GetFloat(AREA_ATTACK_RECORD_PLAYERPREF_ID, 0.0f));
+		ReportArea(PlayerPrefsExt.GetFloatEncrypted(AREA_ATTACK_RECORD_PLAYERPREF_ID, 0.0f));
 	}
 	void LoadGooglePlayRecord() {
 		// TODO Add GooglePlayServices stuff

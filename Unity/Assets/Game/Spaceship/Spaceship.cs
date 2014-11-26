@@ -38,8 +38,10 @@ public class Spaceship : MonoBehaviour {
 	Vector2 _touchStartPos;
 
 	public SmartEvent Died;
-
-	public AudioClip _thrusterSound;
+	
+	public AudioSource _laserSource;
+	public AudioSource _thrusterSource;
+	float _thrusterSoundDampingVel;
 	public List<AudioClip> _laserSounds;
 
 	void Awake () {
@@ -115,6 +117,17 @@ public class Spaceship : MonoBehaviour {
 			Vector2 dirVec = (touchPos - thisPos).normalized * (SettingsManager.UseReverseFlight ? -1 : 1);
 			_rigidbody.AddForce(dirVec * _moveForce);
 			_rigidbody.rotation = Mathf.Atan2(dirVec.y,dirVec.x) * Mathf.Rad2Deg;
+			
+			
+			if (firstTouch.phase == TouchPhase.Began) {
+				_thrusterSource.Stop();
+				_thrusterSource.Play();
+				_thrusterSource.volume = 0;
+			}
+			_thrusterSource.volume = Mathf.SmoothDamp(_thrusterSource.volume, 1, ref _thrusterSoundDampingVel, .15f);
+		}
+		else {
+			_thrusterSource.volume = Mathf.SmoothDamp(_thrusterSource.volume, 0, ref _thrusterSoundDampingVel, .15f);
 		}
 	}
 
@@ -126,6 +139,8 @@ public class Spaceship : MonoBehaviour {
 		Ray2D laserRay = new Ray2D(transform.position, laserDir);
 		_planetoidsManager.SlicePlanetoids(laserRay, _laserPower);
 		_laserManager.StartLaser(laserRay);
+		
+		_laserSource.PlayOneShot(_laserSounds.GetRandom(), 1.0f);
 	}
 
 	Vector2 AutoAimPosition (Vector2 touchScreenPos) {

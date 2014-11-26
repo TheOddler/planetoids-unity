@@ -8,7 +8,7 @@ using System.Diagnostics;
 public class GameModeTime : AGameMode {
 	
 	public const string TIME_TRIAL_LEADERBOARD_ID = "CgkIgr_5uO8aEAIQAA";
-	public const string TIME_TRIAL_RECORD_PLAYERPREF_ID = "TimeTrialRecord";
+	public const string TIME_TRIAL_RECORD_PLAYERPREF_ID = "Record_TimeTrial";
 	
 	public const string TIME_FORMAT = @"mm\:ss.ff";
 	
@@ -104,7 +104,7 @@ public class GameModeTime : AGameMode {
 	}
 	void SaveRecord() {
 		// In playerprefs
-		PlayerPrefsExt.SetTimeSpan(TIME_TRIAL_RECORD_PLAYERPREF_ID, _curRecord);
+		PlayerPrefsExt.SetTimeSpanEncrypted(TIME_TRIAL_RECORD_PLAYERPREF_ID, _curRecord);
 		// In google play services if active
 		if (Social.localUser.authenticated) {
 			long miliseconds = _curRecord.Ticks / TimeSpan.TicksPerMillisecond;
@@ -112,7 +112,7 @@ public class GameModeTime : AGameMode {
 		}
 	}
 	void LoadKnownRecord() {
-		ReportTime(PlayerPrefsExt.GetTimeSpan(TIME_TRIAL_RECORD_PLAYERPREF_ID, TimeSpan.MaxValue));
+		ReportTime(PlayerPrefsExt.GetTimeSpanEncrypted(TIME_TRIAL_RECORD_PLAYERPREF_ID, TimeSpan.MaxValue));
 	}
 	void LoadGooglePlayRecord() {
 		// TODO Add GooglePlayServices stuff
