@@ -35,7 +35,7 @@ public class Spaceship : MonoBehaviour {
 
 	public float _maxTapTime = 0.5f;
 	float _touchStartTime = 0;
-	Vector2 _touchStartPos;
+	Planetoid _touchStartAutoAimPlanetoid;
 
 	public SmartEvent Died;
 	
@@ -89,53 +89,81 @@ public class Spaceship : MonoBehaviour {
 	}
 
 	void Update () {
-		if (_gameManager.GameRunning && Input.touchCount > 0) {
-			var firstTouch = Input.GetTouch(0);
-			if (firstTouch.phase == TouchPhase.Began) {
-				_touchStartTime = Time.timeSinceLevelLoad;
-				_touchStartPos = firstTouch.position;
-			}
-			else if (firstTouch.phase == TouchPhase.Ended) {
-				if (Time.timeSinceLevelLoad - _touchStartTime < _maxTapTime) {
-					FireLaser(AutoAimPosition(_touchStartPos));
+		if (_gameManager.GameRunning) {
+			if (Input.touchCount > 0) {
+				var firstTouch = Input.GetTouch(0);
+				if (firstTouch.phase == TouchPhase.Began) {
+					_touchStartTime = Time.timeSinceLevelLoad;
+					_touchStartAutoAimPlanetoid = AutoAim(firstTouch.position);
+				}
+				else if (firstTouch.phase == TouchPhase.Ended) {
+					if (Time.timeSinceLevelLoad - _touchStartTime < _maxTapTime) {
+						FireLaser(_touchStartAutoAimPlanetoid, firstTouch.position);
+					}
+				}
+				else if (Input.touchCount >= 2) {
+					var secondTouch = Input.GetTouch(1);
+					if (secondTouch.phase == TouchPhase.Began) {
+						FireLaser(AutoAim(firstTouch.position), secondTouch.position);
+					}
 				}
 			}
-			else if (Input.touchCount >= 2) {
-				var secondTouch = Input.GetTouch(1);
-				if (secondTouch.phase == TouchPhase.Began) {
-					FireLaser(AutoAimPosition(secondTouch.position));
-				}
+			else if (Input.GetMouseButtonDown(0)) {
+				FireLaser(AutoAim(Input.mousePosition), Input.mousePosition);
 			}
 		}
 	}
 	void FixedUpdate () {
-		if (_gameManager.GameRunning && Input.touchCount > 0) {
-			var firstTouch = Input.GetTouch(0);
-			Vector2 touchPos = firstTouch.position;
-			Vector2 thisPos = Camera.main.WorldToScreenPoint(transform.position);
-
-			Vector2 dirVec = (touchPos - thisPos).normalized * (SettingsManager.UseReverseFlight ? -1 : 1);
-			_rigidbody.AddForce(dirVec * _moveForce);
-			_rigidbody.rotation = Mathf.Atan2(dirVec.y,dirVec.x) * Mathf.Rad2Deg;
-			
-			
-			if (firstTouch.phase == TouchPhase.Began) {
-				_thrusterSource.Stop();
-				_thrusterSource.Play();
-				_thrusterSource.volume = 0;
+		if (_gameManager.GameRunning) {
+			if (Input.touchCount > 0) {
+				var firstTouch = Input.GetTouch(0);
+				MovementUpdate(firstTouch.position, firstTouch.phase == TouchPhase.Began);
 			}
-			_thrusterSource.volume = Mathf.SmoothDamp(_thrusterSource.volume, 1, ref _thrusterSoundDampingVel, .15f);
+			else if (Input.GetMouseButtonDown(1)) {
+				MovementUpdate(Input.mousePosition, true);
+			}
+			else if (Input.GetMouseButton(1)) {
+				MovementUpdate(Input.mousePosition, false);
+			}
+			else {
+				NoMovementUpdate();
+			}
 		}
 		else {
-			_thrusterSource.volume = Mathf.SmoothDamp(_thrusterSource.volume, 0, ref _thrusterSoundDampingVel, .15f);
+			NoMovementUpdate();
 		}
 	}
+	void MovementUpdate(Vector2 screenTouchPos, bool began) {
+		Vector2 touchPos = screenTouchPos;
+		Vector2 thisPos = Camera.main.WorldToScreenPoint(transform.position);
+		
+		Vector2 dirVec = (touchPos - thisPos).normalized * (SettingsManager.UseReverseFlight ? -1 : 1);
+		_rigidbody.AddForce(dirVec * _moveForce);
+		_rigidbody.rotation = Mathf.Atan2(dirVec.y,dirVec.x) * Mathf.Rad2Deg;
+		
+		
+		if (began) {
+			_thrusterSource.Stop();
+			_thrusterSource.Play();
+			_thrusterSource.volume = 0;
+		}
+		_thrusterSource.volume = Mathf.SmoothDamp(_thrusterSource.volume, 1, ref _thrusterSoundDampingVel, .15f);
+	}
+	void NoMovementUpdate() {
+		_thrusterSource.volume = Mathf.SmoothDamp(_thrusterSource.volume, 0, ref _thrusterSoundDampingVel, .15f);
+	}
 
-	void FireLaser(Vector2 touchScreenPos) {
+	void FireLaser(Planetoid autoAimPlanetoid, Vector2 screenTouchPos) {
 		Vector2 shipScreenPos = Camera.main.WorldToScreenPoint(transform.position);
 
-		Vector2 laserDir = touchScreenPos - shipScreenPos;
-
+		Vector2 laserDir;
+		if (autoAimPlanetoid == null) {
+			laserDir = screenTouchPos - shipScreenPos;
+		}
+		else {
+			laserDir = (Vector2)Camera.main.WorldToScreenPoint(autoAimPlanetoid.WorldCenterOfMass);
+		}
+		
 		Ray2D laserRay = new Ray2D(transform.position, laserDir);
 		_planetoidsManager.SlicePlanetoids(laserRay, _laserPower);
 		_laserManager.StartLaser(laserRay);
@@ -143,7 +171,7 @@ public class Spaceship : MonoBehaviour {
 		_laserSource.PlayOneShot(_laserSounds.GetRandom(), 1.0f);
 	}
 
-	Vector2 AutoAimPosition (Vector2 touchScreenPos) {
+	Planetoid AutoAim (Vector2 touchScreenPos) {
 		// auto aim
 		Vector2 worldTouchPos = Camera.main.ScreenToWorldPoint(touchScreenPos);
 		#if UNITY_EDITOR
@@ -155,15 +183,16 @@ public class Spaceship : MonoBehaviour {
 		if (tappedPlanetoidCollider != null) {
 			Planetoid tappedPlanetoid = tappedPlanetoidCollider.GetComponent<Planetoid>();
 			if (tappedPlanetoid.GetArea() <= _autoAimAreaThreshold) {
-				touchScreenPos = (Vector2)Camera.main.WorldToScreenPoint(tappedPlanetoid.WorldCenterOfMass);
+				//touchScreenPos = (Vector2)Camera.main.WorldToScreenPoint(tappedPlanetoid.WorldCenterOfMass);
 				#if UNITY_EDITOR
 				Debug.DrawLine(tappedPlanetoid.WorldCenterOfMass - Vector2.up, tappedPlanetoid.WorldCenterOfMass + Vector2.up, Color.red, 2);
 				Debug.DrawLine(tappedPlanetoid.WorldCenterOfMass - Vector2.right, tappedPlanetoid.WorldCenterOfMass + Vector2.right, Color.red, 2);
 				#endif
+				return tappedPlanetoid;
 			}
 		}
 
-		return touchScreenPos;
+		return null;
 	}
 
 	void OnCollisionEnter2D(Collision2D collision) {
