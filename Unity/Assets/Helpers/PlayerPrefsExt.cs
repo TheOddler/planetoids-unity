@@ -5,8 +5,8 @@ using System.Globalization;
 
 public static class PlayerPrefsExt {
 	
-	private const string PASS_PHRASE = "You found the passphrase, send me an email for some free stuff!";
-	
+	private const string PASS_PHRASE = "Drie maal kloppen, drummen op je buik en dan knipogen naar de deur.";
+	private const string ECRYPTED_PREFIX = "Verstopte waarde: ";
 	
 	
 	static public void SetFloatEncrypted(string key, float value) {
@@ -79,11 +79,17 @@ public static class PlayerPrefsExt {
 	
 	
 	static public void SetStringEncrypted(string key, string value = "") {
-		PlayerPrefs.SetString(key, Encrypter.Encrypt(value, PASS_PHRASE));
+		PlayerPrefs.SetString(key, Encrypter.Encrypt(ECRYPTED_PREFIX + value, PASS_PHRASE));
 	}
 	static public string GetStringEncrypted(string key, string defaultValue) {
 		try {
-			return Encrypter.Decrypt(PlayerPrefs.GetString(key,""), PASS_PHRASE);
+			string encryptedString =Encrypter.Decrypt(PlayerPrefs.GetString(key,""), PASS_PHRASE);
+			if (encryptedString.StartsWith(ECRYPTED_PREFIX)) {
+				return encryptedString.Remove(0, ECRYPTED_PREFIX.Length);
+			}
+			else {
+				return defaultValue;
+			}
 		}
 		catch {
 			return defaultValue;

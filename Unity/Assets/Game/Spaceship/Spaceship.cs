@@ -29,6 +29,7 @@ public class Spaceship : MonoBehaviour {
 	public LayerMask _damagingLayers;
 
 	public float _laserPower = 5;
+	public float _laserRecoilForce = -10;
 
 	public float _autoAimAreaThreshold = 3.0f;
 	public float _autoAimRadius = 1.0f;
@@ -109,7 +110,13 @@ public class Spaceship : MonoBehaviour {
 				}
 			}
 			else if (Input.GetMouseButtonDown(0)) {
-				FireLaser(AutoAim(Input.mousePosition), Input.mousePosition);
+				_touchStartTime = Time.timeSinceLevelLoad;
+				_touchStartAutoAimPlanetoid = AutoAim(Input.mousePosition);
+			}
+			else if (Input.GetMouseButtonUp(0)) {
+				if (Time.timeSinceLevelLoad - _touchStartTime < _maxTapTime) {
+					FireLaser(_touchStartAutoAimPlanetoid, Input.mousePosition);
+				}
 			}
 		}
 	}
@@ -117,13 +124,10 @@ public class Spaceship : MonoBehaviour {
 		if (_gameManager.GameRunning) {
 			if (Input.touchCount > 0) {
 				var firstTouch = Input.GetTouch(0);
-				MovementUpdate(firstTouch.position, firstTouch.phase == TouchPhase.Began);
+				MovementUpdate(firstTouch.position);
 			}
-			else if (Input.GetMouseButtonDown(1)) {
-				MovementUpdate(Input.mousePosition, true);
-			}
-			else if (Input.GetMouseButton(1)) {
-				MovementUpdate(Input.mousePosition, false);
+			else if (Input.GetMouseButton(0) && !Input.GetMouseButtonDown(0)) {
+				MovementUpdate(Input.mousePosition);
 			}
 			else {
 				NoMovementUpdate();
@@ -133,20 +137,14 @@ public class Spaceship : MonoBehaviour {
 			NoMovementUpdate();
 		}
 	}
-	void MovementUpdate(Vector2 screenTouchPos, bool began) {
+	void MovementUpdate(Vector2 screenTouchPos) {
 		Vector2 touchPos = screenTouchPos;
 		Vector2 thisPos = Camera.main.WorldToScreenPoint(transform.position);
 		
 		Vector2 dirVec = (touchPos - thisPos).normalized * (SettingsManager.UseReverseFlight ? -1 : 1);
 		_rigidbody.AddForce(dirVec * _moveForce);
 		_rigidbody.rotation = Mathf.Atan2(dirVec.y,dirVec.x) * Mathf.Rad2Deg;
-		
-		
-		if (began) {
-			_thrusterSource.Stop();
-			_thrusterSource.Play();
-			_thrusterSource.volume = 0;
-		}
+	
 		_thrusterSource.volume = Mathf.SmoothDamp(_thrusterSource.volume, 1, ref _thrusterSoundDampingVel, .15f);
 	}
 	void NoMovementUpdate() {
@@ -160,11 +158,14 @@ public class Spaceship : MonoBehaviour {
 			screenTouchPos = (Vector2)Camera.main.WorldToScreenPoint(autoAimPlanetoid.WorldCenterOfMass);
 		}
 		Vector2 laserDir = screenTouchPos - shipScreenPos;
+		laserDir.Normalize();
 		
 		
 		Ray2D laserRay = new Ray2D(transform.position, laserDir);
 		_planetoidsManager.SlicePlanetoids(laserRay, _laserPower);
 		_laserManager.StartLaser(laserRay);
+		
+		_rigidbody.AddForce(laserDir * _laserRecoilForce);
 		
 		_laserSource.PlayOneShot(_laserSounds.GetRandom(), 1.0f);
 	}
@@ -180,7 +181,7 @@ public class Spaceship : MonoBehaviour {
 		Collider2D tappedPlanetoidCollider = Physics2D.OverlapCircle(worldTouchPos, _autoAimRadius, _planetoidsManager.PlanetoidsLayer);
 		if (tappedPlanetoidCollider != null) {
 			Planetoid tappedPlanetoid = tappedPlanetoidCollider.GetComponent<Planetoid>();
-			if (tappedPlanetoid.GetArea() <= _autoAimAreaThreshold) {
+			if (!tappedPlanetoid.Fading && tappedPlanetoid.GetArea() <= _autoAimAreaThreshold) {
 				//touchScreenPos = (Vector2)Camera.main.WorldToScreenPoint(tappedPlanetoid.WorldCenterOfMass);
 				#if UNITY_EDITOR
 				Debug.DrawLine(tappedPlanetoid.WorldCenterOfMass - Vector2.up, tappedPlanetoid.WorldCenterOfMass + Vector2.up, Color.red, 2);
@@ -195,7 +196,7 @@ public class Spaceship : MonoBehaviour {
 
 	void OnCollisionEnter2D(Collision2D collision) {
 		if ((_damagingLayers.value & (1 << collision.gameObject.layer)) > 0) {
-			Damage(CalculateDamage(collision.relativeVelocity, collision.rigidbody));
+			Damage(CalculateDamage(collision.relativeVelocity));
 		}
 	}
 
@@ -210,13 +211,8 @@ public class Spaceship : MonoBehaviour {
 		}
 	}
 
-	float CalculateDamage(Vector2 relativeVelocity, Rigidbody2D other) {
+	float CalculateDamage(Vector2 relativeVelocity) {
 		float magnitude = relativeVelocity.sqrMagnitude;
-		#if UNITY_EDITOR && false
-		if (magnitude > _velocityDamageMax) {
-			Debug.Log("Hit velocity damage max, would have been: " + magnitude + "; other mass: " + other.mass);
-		}
-		#endif
 		return Mathf.Min(magnitude, _velocityDamageMax) / _shieldStrength;
 	}
 
