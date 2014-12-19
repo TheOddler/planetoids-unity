@@ -141,7 +141,7 @@ public class Spaceship : MonoBehaviour {
 		Vector2 touchPos = screenTouchPos;
 		Vector2 thisPos = Camera.main.WorldToScreenPoint(transform.position);
 		
-		Vector2 dirVec = (touchPos - thisPos).normalized * (SettingsManager.UseReverseFlight ? -1 : 1);
+		Vector2 dirVec = (touchPos - thisPos).normalized;
 		_rigidbody.AddForce(dirVec * _moveForce);
 		_rigidbody.rotation = Mathf.Atan2(dirVec.y,dirVec.x) * Mathf.Rad2Deg;
 	
