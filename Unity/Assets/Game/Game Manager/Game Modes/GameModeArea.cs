@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 public class GameModeArea : AGameMode {
 	
-	public const string AREA_ATTACK_LEADERBOARD_ID = "CgkIgr_5uO8aEAIQAQ";
+	public const string AREA_ATTACK_LEADERBOARD_ID = "CgkIgr_5uO8aEAIQDg";
 	public const string AREA_ATTACK_RECORD_PLAYERPREF_ID = "Record_AreaAttack";
 	public const string AREA_FORMAT = @"0.000 m²";
 	

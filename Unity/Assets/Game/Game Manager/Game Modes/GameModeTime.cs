@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 public class GameModeTime : AGameMode {
 	
-	public const string TIME_TRIAL_LEADERBOARD_ID = "CgkIgr_5uO8aEAIQAA";
+	public const string TIME_TRIAL_LEADERBOARD_ID = "CgkIgr_5uO8aEAIQDw";
 	public const string TIME_TRIAL_RECORD_PLAYERPREF_ID = "Record_TimeTrial";
 	
 	public const string TIME_FORMAT = @"mm\:ss.ff";
