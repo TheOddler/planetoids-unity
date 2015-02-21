@@ -18,8 +18,6 @@ public class SettingsManager : MonoBehaviour {
 	public void SetSoundEnabled(bool enabled) {
 		PlayerPrefs.SetInt(SOUND_ENABLED_ID, enabled ? TRUE : FALSE);
 		AudioListener.volume = enabled ? 1 : 0;
-		
-		Debug.Log(enabled);
 	}
 	
 }
