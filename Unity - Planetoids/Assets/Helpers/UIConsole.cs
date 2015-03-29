@@ -7,10 +7,10 @@ public class UIConsole : MonoBehaviour {
 	public Text _logText;
 	
 	void OnEnable() {
-		Application.RegisterLogCallback(HandleLog);
+		Application.logMessageReceived += HandleLog;
 	}
 	void OnDisable() {
-		Application.RegisterLogCallback(null);
+		Application.logMessageReceived -= HandleLog;
 	}
 	
 	void HandleLog(string logString, string stackTrace, LogType type) {
