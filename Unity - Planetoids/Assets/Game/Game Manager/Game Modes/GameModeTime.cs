@@ -44,6 +44,7 @@ public class GameModeTime : AGameMode {
 		_manager.PlanetoidsManager.CreatePlanetoids(_planetoidCount);
 		
 		_areaAtStart = CalculateAreaInPlay();
+		_stopwatch.Reset();
 		_stopwatch.Start();
 		
 		UpdateProgressInfo();
